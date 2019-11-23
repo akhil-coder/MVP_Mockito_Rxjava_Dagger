@@ -9,7 +9,7 @@ public interface MainScreenContract {
         void showAllToDos(List<ToDo> toDoList);
         void updateViewOnAdd(List<ToDo> toDoList);
         void showError(String errorMessage);
-        void navigateToDataManipulationActivity(long id);
+        boolean navigateToDataManipulationActivity(long id);
     }
 
     interface Presenter extends BasePresenter{

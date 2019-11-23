@@ -9,6 +9,16 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.jakewharton.rxbinding3.view.RxView;
+
+import java.util.ArrayList;
+import java.util.concurrent.TimeUnit;
+
+import io.reactivex.Observer;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.disposables.CompositeDisposable;
+import io.reactivex.disposables.Disposable;
+import kotlin.Unit;
 import todolist.youtube.com.codetutor.DataManipulationScreenContract;
 import todolist.youtube.com.codetutor.R;
 import todolist.youtube.com.codetutor.model.bean.ToDo;
@@ -24,6 +34,7 @@ public class DataManipulationActivity extends AppCompatActivity implements DataM
 
     long toDoId;
     ToDo toDo;
+    private CompositeDisposable compositeDisposable = new CompositeDisposable();
 
 
     @Override
@@ -43,12 +54,12 @@ public class DataManipulationActivity extends AppCompatActivity implements DataM
 
         editTextNewToDo = (EditText)findViewById(R.id.editTextNewToDo);
 
-        buttonRemoveToDo.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                presenter.onRemoveButtonClicked(toDoId);
-            }
-        });
+//        buttonRemoveToDo.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View v) {
+//                presenter.onRemoveButtonClicked(toDoId);
+//            }
+//        });
 
         buttonModifyToDo.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -56,6 +67,33 @@ public class DataManipulationActivity extends AppCompatActivity implements DataM
                 presenter.onModifyButtonClicked(toDoId,editTextNewToDo.getText().toString());
             }
         });
+
+
+        RxView.clicks(buttonRemoveToDo)
+                .throttleFirst(600, TimeUnit.MILLISECONDS)
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new Observer<Unit>() {
+                    @Override
+                    public void onSubscribe(Disposable d) {
+                        compositeDisposable.add(d);
+                    }
+
+                    @Override
+                    public void onNext(Unit unit) {
+                        presenter.onRemoveButtonClicked(toDoId);
+                        updateViewOnRemove();
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+
+                    }
+
+                    @Override
+                    public void onComplete() {
+
+                    }
+                });
 
     }
 
@@ -83,6 +121,8 @@ public class DataManipulationActivity extends AppCompatActivity implements DataM
 
     @Override
     public void updateViewOnRemove() {
+        buttonRemoveToDo.setEnabled(false);
+        buttonModifyToDo.setEnabled(false);
         textViewToBeModifiedToDoId.setText("");
         textViewToBeModifiedToDo.setText("");
         textViewToBeModifiedToDoPlace.setText("");

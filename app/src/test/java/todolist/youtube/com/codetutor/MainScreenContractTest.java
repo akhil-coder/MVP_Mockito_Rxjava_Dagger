@@ -1,104 +1,100 @@
 package todolist.youtube.com.codetutor;
 
-import org.junit.Assert;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.junit.MockitoJUnit;
+import org.mockito.junit.MockitoRule;
 
+import java.util.ArrayList;
 import java.util.List;
 
+import io.reactivex.Scheduler;
+import io.reactivex.Single;
+import io.reactivex.functions.Function;
+import io.reactivex.plugins.RxJavaPlugins;
+import io.reactivex.schedulers.Schedulers;
 import todolist.youtube.com.codetutor.model.Model;
 import todolist.youtube.com.codetutor.model.bean.ToDo;
 import todolist.youtube.com.codetutor.presenter.MainScreenPresenterImp;
 
 public class MainScreenContractTest {
 
-    @Test
-    public void shouldAddEntriesToViewOnAddClick(){
+    @Rule
+    public MockitoRule mockitoRule = MockitoJUnit.rule();
 
-        //Given
-        MainScreenContract.View view = new MockView();
-        MockModel mockModel = new MockModel();
+    @Mock
+    MainScreenContract.View view;
+
+    @Mock
+    Model model;
+    private MainScreenPresenterImp mainScreenPresenterImp;
+    private List<ToDo> toDoList;
+
+
+    @Before
+    public void setUp() throws Exception {
+        mainScreenPresenterImp = new MainScreenPresenterImp(view, model, Schedulers.trampoline());
+        toDoList = new ArrayList<>();
+        //Set Ioscheduler to trampoline
+        RxJavaPlugins.setIoSchedulerHandler(new Function<Scheduler, Scheduler>() {
+            @Override
+            public Scheduler apply(Scheduler scheduler) throws Exception {
+                return Schedulers.trampoline();
+            }
+        });
+    }
+
+    @After
+    public void cleanUp() {
+        RxJavaPlugins.reset();  // Clears any changes to shedulers
+    }
+
+    @Test
+    public void shouldAddEntriesToViewOnAddClick() throws Exception {
+
+        toDoList.add(new ToDo(1, "Drink", "Sun"));
+        toDoList.add(new ToDo(2, "Drink", "Mars"));
+        toDoList.add(new ToDo(3, "Drink", "Pluto"));
+
+        Mockito.when(model.addToDoItem("Piss", "Moon")).thenReturn(true);
+        Mockito.when(model.getAllToDosReactivlly()).thenReturn(Single.just(toDoList));
 
         //When
-        MainScreenPresenterImp mainScreenPresenterImp = new MainScreenPresenterImp(view, mockModel);
-        mainScreenPresenterImp.onAddButtonClicked("Piss", "Moon" );
+        mainScreenPresenterImp.onAddButtonClicked("Piss", "Moon");
 
         //Then
-        Assert.assertEquals(true, ((MockView) view).passed);
+        Mockito.verify(view).updateViewOnAdd(toDoList);
     }
+
+//    @Test
+//    public void shouldHandleError(){
+//
+//        toDoList.add(new ToDo(1, "Drink", "Sun"));
+//        toDoList.add(new ToDo(2, "Drink", "Mars"));
+//        toDoList.add(new ToDo(3, "Drink", "Pluto"));
+//
+//        Mockito.when(model.addToDoItem("Piss", "Moon")).thenReturn(true);
+//        Mockito.when(model.getAllToDos()).thenThrow(new RuntimeException("Boom"));
+//
+//        //When
+//        mainScreenPresenterImp.onAddButtonClicked("Piss", "Moon");
+//
+//        //Then
+//        Mockito.verify(view).showError("Boom");
+//    }
 
     @Test
     public void shouldLaunchDataManipOnItemClick() {
-        //Given
-        MainScreenContract.View view = new MockView();
-        MockModel mockModel = new MockModel();
 
         //When
-        MainScreenPresenterImp mainScreenPresenterImp = new MainScreenPresenterImp(view, mockModel);
+        MainScreenPresenterImp mainScreenPresenterImp = new MainScreenPresenterImp(view, model);
         mainScreenPresenterImp.onToDoItemSelected(1);
         //Then
-        Assert.assertEquals(true, ((MockView) view).passed);
+        Mockito.verify(view).navigateToDataManipulationActivity(1);
     }
 
-
-    private class MockView implements MainScreenContract.View {
-
-        boolean passed;
-
-        @Override
-        public void showAllToDos(List<ToDo> toDoList) {
-
-        }
-
-        @Override
-        public void updateViewOnAdd(List<ToDo> toDoList) {
-             passed = true;
-        }
-
-        @Override
-        public void showError(String errorMessage) {
-
-        }
-
-        @Override
-        public void navigateToDataManipulationActivity(long id) {
-            if(id == 1)
-            passed = true;
-        }
-
-        @Override
-        public void setPresenter(MainScreenContract.Presenter presenter) {
-
-        }
-    }
-
-    private class MockModel implements Model{
-
-        @Override
-        public List<ToDo> getAllToDos() throws Exception {
-            return null;
-        }
-
-        @Override
-        public ToDo getToDo(long id) throws Exception {
-            return null;
-        }
-
-        @Override
-        public boolean addToDoItem(String toDoItem, String place) throws Exception {
-            if(!toDoItem.isEmpty() && !place.isEmpty())
-            return true;
-            return false;
-        }
-
-        @Override
-        public boolean removeToDoItem(long id) throws Exception {
-            return false;
-        }
-
-        @Override
-        public boolean modifyToDoItem(long id, String newToDoValuel) throws Exception {
-            return false;
-        }
-    }
 }

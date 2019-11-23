@@ -81,12 +81,10 @@ public class ToDoListDBAdapter {
         List<ToDo> toDoList=new ArrayList<ToDo>();
 
         Cursor cursor=sqLliteDatabase.query(TABLE_TODO,new String[]{COLUMN_TODO_ID,COLUMN_TODO, COLUMN_PLACE},null,null,null,null,null,null);
-
         if(cursor!=null &cursor.getCount()>0){
             while(cursor.moveToNext()){
                 ToDo toDo=new ToDo(cursor.getLong(0),cursor.getString(1), cursor.getString(2));
                 toDoList.add(toDo);
-
             }
         }
         cursor.close();

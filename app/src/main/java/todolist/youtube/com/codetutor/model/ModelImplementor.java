@@ -1,13 +1,23 @@
 package todolist.youtube.com.codetutor.model;
 
-import java.util.List;
+import android.util.Log;
 
+import java.util.List;
+import java.util.concurrent.Callable;
+
+import io.reactivex.Observable;
+import io.reactivex.Single;
 import todolist.youtube.com.codetutor.exception.ToDoNotFoundException;
 import todolist.youtube.com.codetutor.model.bean.ToDo;
 import todolist.youtube.com.codetutor.model.db.ToDoListDBAdapter;
 
+
+/*      TODO
+  Convert rest of db adapter operations into reactive */
+
 public class ModelImplementor implements Model {
 
+    private static final String TAG = "ModelImplementor";
     ToDoListDBAdapter toDoListDBAdapter;
 
     List<ToDo> toDoItems;
@@ -15,6 +25,18 @@ public class ModelImplementor implements Model {
     public ModelImplementor(ToDoListDBAdapter toDoListDBAdapter){
         this.toDoListDBAdapter = toDoListDBAdapter;
         toDoItems = this.toDoListDBAdapter.getAllToDos();
+    }
+
+    @Override
+    public Single<List<ToDo>> getAllToDosReactivlly() {
+
+        return Single.fromCallable(new Callable<List<ToDo>>() {
+            @Override
+            public List<ToDo> call() throws Exception {
+                Log.d(TAG, "call: Process id: " + Thread.currentThread().getId());
+                return getAllToDos();
+            }
+        });
     }
 
     @Override
@@ -26,6 +48,37 @@ public class ModelImplementor implements Model {
           throw new Exception("Empty To Do List");
         }
     }
+
+    @Override
+    public Single<Boolean> addToDoItemReactivly(final String toDoItem, final String place) throws Exception {
+        return Single.fromCallable(new Callable<Boolean>() {
+            @Override
+            public Boolean call() throws Exception {
+                boolean insertSuccess = toDoListDBAdapter.insert(toDoItem, place);
+                if (insertSuccess){
+                    refresh();
+                }else{
+                    throw new Exception("Some thing went wrong!!!");
+                }
+                return insertSuccess;
+            }
+        });
+    }
+
+    @Override
+    public Single<Boolean> removeToDoItemReactivly(final long id) throws Exception {
+        return Single.fromCallable(new Callable<Boolean>() {
+            @Override
+            public Boolean call() throws Exception {
+                boolean insertSuccess = toDoListDBAdapter.delete(id);
+                if (insertSuccess){
+                    refresh();
+                }else{
+                    throw new ToDoNotFoundException("Id is wrong");
+                }
+                return insertSuccess;
+            }
+        });    }
 
     @Override
     public boolean addToDoItem(String toDoItem, String place) throws Exception{
@@ -62,6 +115,8 @@ public class ModelImplementor implements Model {
         }
         return modifySuccess;
     }
+
+
 
     public ToDo getToDo(long id) throws Exception{
         ToDo toDo = null;
